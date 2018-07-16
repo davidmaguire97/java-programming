@@ -1,0 +1,177 @@
+model ESI
+
+--classes
+
+class Hospital
+attributes
+  name : String
+  phone : Integer
+  address : String
+end
+
+class Patient
+attributes
+  FirstName : String
+  LastName : String
+  id : String
+  gender : Gender
+  birthday : Integer
+  obtain_patient_info: Boolean
+  checked_for_immediate_intervention: Boolean
+  situation_assessed: Boolean
+  examined_if_confused: Boolean
+  examined_if_disoriented: Boolean
+  examined_if_lethargic: Boolean
+  checked_if_severe_pain: Boolean
+  checked_if_distressed: Boolean
+  number_resources_assessed: Boolean
+  resources: Integer
+  vitals_examined: Boolean
+end
+
+class TreatedPatient
+attributes
+  RequiresLifeSavingIntervention: Boolean
+  highRiskSituation: Boolean
+  confused: Boolean
+  lethargic: Boolean
+  Disoriented: Boolean
+  SeverePain: Boolean
+  Distress: Boolean
+  ResourcesRequired: Integer
+  VitalZones:Integer
+end
+
+class Severity
+attributes
+  severity: severity
+operations
+  checkIfInterventionNeeded(p: Patient)
+  assessSituation(p: Patient)
+  examine(p: Patient)
+  checkForPain(p: Patient)
+  checkResourcesNeeded(p: Patient)
+  measureVitalZones(p: Patient, resources: Integer)
+end
+
+class Immediate
+operations
+  ResuscitationRequired(p: Patient)
+  ContinuousObservation(p: Patient)
+end
+
+class VeryUrgent
+operations
+  Stabilize(p: Patient)
+  Monitor(p: Patient)
+end
+
+class Urgent
+operations
+  Supervision(p: Patient)
+end
+
+class Minor
+operations
+  Reassess(p: Patient, resources: Integer)
+end
+
+class Delayed
+operations
+  CanWait(p: Patient)
+  Reassess(p: Patient, resources: Integer)
+end
+
+-- associations
+
+composition ConsistOf between
+  Hospital[1]
+  Patient[1..*]
+end
+
+association patient between
+  TreatedPatient[1]
+  Patient[1]
+end
+
+association treatment between
+  TreatedPatient[1]
+  Severity[1]
+end
+
+association veryUrgent between
+  Severity[1]
+  VeryUrgent[1]
+end
+
+
+association immediate between
+  Severity[1]
+  Immediate[1]
+end
+
+association minor between
+  Severity[1]
+  Minor[1]
+end
+
+association urgent between
+  Severity[1]
+  Urgent[1]
+end
+
+association delayed between
+  Severity[1]
+  Delayed[1]
+end
+-- enumeration
+
+enum severity {Immediate, VeryUrgent,Urgent,Minor, Delayed}
+enum Gender {Male, Female}
+
+--constraints
+constraints
+context Severity :: checkIfInterventionNeeded(p: Patient)
+pre: p.obtain_patient_info = true
+post: p.checked_for_immediate_intervention=true
+
+context Severity :: assessSituation(p: Patient)
+pre: p.checked_for_immediate_intervention=true
+post: p.situation_assessed=true
+
+context Severity :: examine(p: Patient)
+pre: p.situation_assessed=true
+post: p.examined_if_confused =true or p.examined_if_disoriented =true or p.examined_if_lethargic =true
+
+context Severity :: checkForPain(p: Patient)
+pre: p.situation_assessed=true
+pre: p.examined_if_confused =true or p.examined_if_disoriented =true or p.examined_if_lethargic =true
+post: p.checked_if_severe_pain=true or p.checked_if_distressed=true
+
+context Severity:: checkResourcesNeeded(p: Patient)
+pre: p.checked_if_severe_pain=true or p.checked_if_distressed=true
+post: p. number_resources_assessed =true
+
+context Severity :: measureVitalZones(p: Patient, resources: Integer)
+pre: p.number_resources_assessed=true and resources >1
+post: p.vitals_examined=true
+
+context Immediate :: ResuscitationRequired (p: Patient)
+pre: p.checked_for_immediate_intervention=true
+
+context VeryUrgent :: Stabilize(p: Patient)
+pre: p.situation_assessed=true
+pre: p.examined_if_confused =true or p.examined_if_disoriented =true or p.examined_if_lethargic =true
+pre: p.checked_if_severe_pain=true or p.checked_if_distressed=true
+pre: p.vitals_examined=true
+
+context Urgent :: Supervision(p: Patient)
+pre: p. vitals_examined=true
+
+context Delayed:: Reassess (p: Patient, resources: Integer)
+pre: p.number_resources_assessed=true
+pre: resources = 0
+
+context Minor :: Reassess (p: Patient, resources: Integer)
+pre: p.number_resources_assessed=true
+pre: resources = 1

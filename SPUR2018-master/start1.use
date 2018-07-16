@@ -1,0 +1,194 @@
+model START
+-- classes
+
+class Hospital
+attributes
+  name : String
+  phone : Integer
+  address : String
+end
+
+class Patient
+attributes
+  FirstName : String
+  LastName : String
+  id : String
+  gender : Gender
+  birthday : Integer
+  obtain_patient_info: Boolean
+  walk_examined: Boolean
+  breathing_checked: Boolean
+  examine_breathing: Boolean
+  position_changed: Boolean
+  recheck_breathing: Boolean
+  respiratory_rate_measured: Boolean
+  rate: Integer
+  radical_pulse_checked: Boolean
+  measure_capillary_refill: Boolean
+  capillary_refill: Integer
+  Mental_responsiveness_examined: Boolean
+  surgery_performed: Boolean
+  family_informed: Boolean
+end
+
+class TreatedPatient
+attributes
+  canWalk: Boolean
+  SpontaneousBreathing: Boolean
+  respiratoryRate: Integer
+  radicalPulse: Boolean
+  capillaryRefill: Integer
+  MentalStatus: String
+end
+
+class Severity
+attributes
+  severity: severity
+operations
+  assessWalk(p: Patient)
+  checkBreathing(p: Patient)
+  measureRespiratoryRate(p: Patient)
+  checkRadicalPulse(p: Patient, rate: Integer)
+  measureCapillaryRefill(p: Patient, rate: Integer)
+  examineMentalStatus(p: Patient, capillary_refill: Integer)
+end
+
+class breathing
+attributes
+  breathing: Boolean
+operations
+  changePosition(p: Patient)
+  recheck(p: Patient)
+end
+
+class Minor
+operations
+  canWait(p: Patient)
+end
+
+class Expectant
+operations
+  informFamily(p: Patient)
+end
+
+class Immediate
+operations
+  PerformSurgery(p: Patient)
+end
+
+class Delayed
+operations
+  canWait(p: Patient)
+end
+
+-- associations
+
+composition ConsistOf between
+  Hospital[1]
+  Patient[1..*]
+end
+
+association patient between
+  Patient[1]
+  TreatedPatient[1]
+end
+
+association check between
+  breathing[1]
+  TreatedPatient[1]
+end
+
+association treated between
+  Severity[1]
+  TreatedPatient[1]
+end
+
+association delayed between
+  Delayed[1]
+  Severity[1]
+end
+
+association minor between
+  Severity[1]
+  Minor[1]
+end
+
+association immediate between
+  Severity[1]
+  Immediate[1]
+end
+
+association expectant between
+  Severity[1]
+  Expectant[1]
+end
+-- enumeration
+
+enum severity {Expectant, Immediate, Delayed, Minor}
+enum Gender {Male, Female}
+
+--constraints
+
+constraints
+context Severity:: assessWalk(p: Patient)
+pre: p.obtain_patient_info = true
+post: p.walk_examined = true
+
+constraints
+context Severity:: checkBreathing(p: Patient)
+pre: p.walk_examined = true
+post: p.breathing_checked=true
+
+constraints
+context breathing :: changePosition(p: Patient)
+pre: p.examine_breathing=true
+post: p.position_changed=true
+
+constraints
+context breathing :: recheck(p: Patient)
+pre: p.position_changed=true
+post: p.recheck_breathing=true
+
+constraints
+context Severity:: measureRespiratoryRate(p: Patient)
+pre: p.examine_breathing=true
+post: p.respiratory_rate_measured =true
+
+constraints
+context Severity:: checkRadicalPulse(p: Patient, rate: Integer)
+pre: p.respiratory_rate_measured=true
+pre: rate < 30
+post: p.radical_pulse_checked=true
+
+constraints
+context Severity:: measureCapillaryRefill(p: Patient, rate: Integer)
+pre: p.respiratory_rate_measured=true
+pre: rate < 30
+pre: p. radical_pulse_checked=true
+post: p.measure_capillary_refill= true
+
+constraints
+context Severity:: examineMentalStatus(p: Patient, capillary_refill: Integer)
+pre: p. measure_capillary_refill= true
+pre: capillary_refill > 2
+pre: p. radical_pulse_checked=true
+post: p. Mental_responsiveness_examined=true
+
+constraints
+context Delayed :: canWait(p: Patient)
+pre: p. Mental_responsiveness_examined=true
+
+constraints
+context Minor :: canWait(p: Patient)
+pre: p.walk_examined = true
+
+constraints
+context Immediate :: PerformSurgery(p: Patient)
+pre: p.respiratory_rate_measured =true or p. radical_pulse_checked=true and p. measure_capillary_refill= true or p. Mental_responsiveness_examined=true
+post: p.surgery_performed=true
+
+constraints
+context Expectant :: informFamily(p: Patient)
+pre: p.position_changed=true
+pre: p.recheck_breathing=true
+post: p.family_informed=true

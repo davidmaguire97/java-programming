@@ -1,0 +1,141 @@
+model Drug_Allergy
+
+--classes
+class Hospital
+attributes
+  name : String
+  phone : Integer
+  address : String
+end
+
+class Patient
+attributes
+  FirstName : String
+  LastName : String
+  id : String
+  gender : Gender
+  birthday : Integer
+  obtain_patient_info: Boolean
+  patient_history_obtained: Boolean
+  allergy_pattern_used_to_examine: Boolean
+  symptoms_checked: Boolean
+  patient_assessed_about_drug: Boolean
+  list_created: Boolean
+  NSAID_allergy_checked: Boolean
+  prescription_given: Boolean
+  patient_informed: Boolean
+  acute_symptoms_treated: Boolean
+  drug_information_recorded: Boolean
+end
+
+class DrugAllergyPatient
+attributes
+  status: Status
+  signs: String
+  symptoms: String
+  timeOccurred: String
+  acuteSymptom: Boolean
+  avoidDrugs: String
+  allergyToNSAID: Boolean
+end
+
+class Treatment
+attributes
+  treated: Boolean
+operations
+  takeHistory(p: Patient)
+  examine(p: Patient)
+  assess(p: Patient)
+  createListOfDrugsToAvoid(p: Patient)
+  checkForNSAIDallergy(p: Patient)
+  prescribe(p: Patient)
+  advice(p: Patient)
+end
+
+class drugInformation
+attributes
+  drugName: String
+  DrugSymptoms: String
+operations
+  recordDrugInfo(p: Patient)
+end
+
+class acuteSymptom
+attributes
+  acuteSymptom: Boolean
+operations
+  treat(p: Patient)
+end
+
+-- associations
+
+composition ConsistOf between
+  Hospital[1]
+  Patient[1..*]
+end
+
+association samePerson between
+  DrugAllergyPatient[1]
+  Patient[1]
+end
+
+association treated between
+  DrugAllergyPatient[1]
+  Treatment[1]
+end
+
+association drugInfo between
+  DrugAllergyPatient[1]
+  drugInformation[1]
+end
+
+association symptom between
+  DrugAllergyPatient[1]
+  acuteSymptom[1]
+end
+
+--enumeration
+enum Status {drugAllergy, noneKnown, unableToAscertain}
+enum Gender {Male, Female}
+
+//constraints
+
+constraints
+context Treatment :: takeHistory(p: Patient)
+pre: p.obtain_patient_info = true
+post: p.patient_history_obtained=true
+
+context Treatment :: examine(p: Patient)
+pre: p.patient_history_obtained=true
+post: p.allergy_pattern_used_to_examine=true
+post: p.symptoms_checked=true
+
+context Treatment :: assess(p: Patient)
+pre: p.allergy_pattern_used_to_examine=true
+post: p.patient_assessed_about_drug=true
+
+context Treatment:: createListOfDrugsToAvoid(p: Patient)
+pre: p.patient_assessed_about_drug=true
+post: p.list_created=true
+
+context Treatment :: checkForNSAIDallergy(p: Patient)
+pre: p.list_created=true
+post: p.NSAID_allergy_checked=true
+
+context Treatment :: prescribe(p: Patient)
+pre: p.NSAID_allergy_checked=true
+pre: p.patient_assessed_about_drug=true
+post: p.prescription_given=true
+
+context Treatment :: advice(p: Patient)
+pre: p.prescription_given=true
+post: p.patient_informed=true
+
+context acuteSymptom :: treat(p: Patient)
+pre: p.allergy_pattern_used_to_examine=true
+pre: p.symptoms_checked=true
+post: p.acute_symptoms_treated=true
+
+context drugInformation :: recordDrugInfo(p: Patient)
+pre: p.patient_assessed_about_drug=true
+post: p.drug_information_recorded=true

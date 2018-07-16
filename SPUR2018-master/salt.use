@@ -1,0 +1,184 @@
+model SALT
+
+--classes
+
+class Hospital
+attributes
+  name : String
+  phone : Integer
+  address : String
+end
+
+class Patient
+attributes
+  FirstName : String
+  LastName : String
+  id : String
+  gender : Gender
+  birthday : Integer
+  obtain_patient_info: Boolean
+  breathing_checked: Boolean
+  movements_examined: Boolean
+  peripheral_pulse_checked: Boolean
+  respiratory_distress_examined: Boolean
+  major_hemorrhaged_controlled: Boolean
+  minor_injuries_only: Boolean
+  patient_survive_current_resources_checked: Boolean
+  family_informed: Boolean
+  surgery_performed: Boolean
+end
+
+class TreatedPatient
+attributes
+  breathing: Boolean
+  ObeysCommands: Boolean
+  PeripheralPulse: Boolean
+  RespiratoryDistress: Boolean
+  MajorHemorrhageControlled: Boolean
+  SurviveCurrentResources: Boolean
+end
+
+class MinorInjuries
+attributes
+  minorInjuries: Boolean
+operations
+  minorInjuriesOnly(p: Patient)
+end
+
+class Severity
+attributes
+  severity: severity
+operations
+  examineBreathing(p: Patient)
+  observeMovements(p: Patient)
+  checkPeripheralPulse(p: Patient)
+  checkRespiratoryDistress(p: Patient)
+  checkMajorHemorrhage(p: Patient)
+  checkIfSurviveCurrentResources(p: Patient)
+end
+
+class Expectant
+operations
+  informFamily(p: Patient)
+end
+
+class Immediate
+operations
+  PerformSurgery(p: Patient)
+end
+
+class Delayed
+operations
+  CanWait(p: Patient)
+end
+
+class Minimal
+operations
+  CanWait(p: Patient)
+end
+
+class Dead
+operations
+  informFamily(p: Patient)
+  informMorgue(p: Patient)
+end
+
+-- associations
+
+composition ConsistOf between
+  Patient[1..*]
+  Hospital[1]
+end
+
+association patient between
+  Patient[1]
+  TreatedPatient[1]
+end
+
+association minorInjuries between
+  MinorInjuries[1]
+  TreatedPatient[1]
+end
+
+association treatment between
+  Severity[1]
+  TreatedPatient[1]
+end
+
+association delayed between
+  Severity[1]
+  Delayed[1]
+end
+
+association dead between
+  Severity[1]
+  Dead[1]
+end
+
+association expectant between
+  Severity[1]
+  Expectant[1]
+end
+
+association minimal between
+  Severity[1]
+  Minimal[1]
+end
+
+association immediate between
+  Severity[1]
+  Immediate[1]
+end
+-- enumeration
+
+enum severity {Expectant, Immediate, Delayed, Minimal, Dead}
+enum Gender {Male, Female}
+
+--constraints
+
+constraints
+context Severity :: examineBreathing(p: Patient)
+pre: p.obtain_patient_info = true
+post: p. breathing_checked=true
+
+context Severity :: observeMovements(p: Patient)
+pre: p.breathing_checked=true
+post: p.movements_examined =true
+
+context Severity :: checkPeripheralPulse(p: Patient)
+pre: p.movements_examined =true
+post: p.peripheral_pulse_checked=true
+
+context Severity :: checkRespiratoryDistress(p: Patient)
+pre: p. peripheral_pulse_checked=true and p.movements_examined =true
+post: p. respiratory_distress_examined=true
+
+context Severity :: checkMajorHemorrhage(p: Patient)
+pre: p. peripheral_pulse_checked=true and p.movements_examined =true and p. respiratory_distress_examined=true
+post: p.major_hemorrhaged_controlled=true
+
+context MinorInjuries :: minorInjuriesOnly(p: Patient)
+pre: p. peripheral_pulse_checked=true and p.movements_examined =true and p. respiratory_distress_examined=true and p.major_hemorrhaged_controlled=true
+post: p.minor_injuries_only=true
+
+context Severity:: checkIfSurviveCurrentResources (p: Patient)
+pre: p. peripheral_pulse_checked=true and p.movements_examined =true and p. respiratory_distress_examined=true and p.major_hemorrhaged_controlled=true
+post: p.patient_survive_current_resources_checked=true
+
+context Delayed :: CanWait(p: Patient)
+pre: p.minor_injuries_only=true
+
+context Dead :: informFamily(p: Patient)
+pre: p. breathing_checked=true
+post: p.family_informed=true
+
+context Expectant :: informFamily(p: Patient)
+pre: p.patient_survive_current_resources_checked=true
+post: p.family_informed=true
+
+context Minimal :: CanWait(p: Patient)
+pre: p.minor_injuries_only=true
+
+context Immediate :: PerformSurgery(p: Patient)
+pre: p.patient_survive_current_resources_checked=true
+post:p.surgery_performed=true
